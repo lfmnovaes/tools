@@ -126,26 +126,28 @@ export default function Calculator() {
     <div className="flex flex-col h-screen bg-neutral-800 text-gray-100">
       <div
         ref={resultsRef}
-        className="flex-1 overflow-y-auto px-4 flex flex-col justify-end"
+        className="flex-1 overflow-y-auto px-4"
       >
-        <div className="flex flex-col">
-          {results.map((item, index) => (
-            <div key={index} className="mb-4 font-mono">
-              <div className="flex items-baseline space-x-2">
-                <span className="text-xl">
-                  {styleExpression(item.expression).map((part, i) => (
-                    <span key={i} className={part.className}>
-                      {part.text}
-                    </span>
-                  ))}
-                </span>
+        <div className="min-h-full flex flex-col justify-end">
+          <div className="flex flex-col">
+            {results.map((item, index) => (
+              <div key={index} className="mb-4 font-mono">
+                <div className="flex items-baseline space-x-2">
+                  <span className="text-xl">
+                    {styleExpression(item.expression).map((part, i) => (
+                      <span key={i} className={part.className}>
+                        {part.text}
+                      </span>
+                    ))}
+                  </span>
+                </div>
+                <div className="flex items-baseline space-x-2">
+                  <span className="text-gray-400 text-xl">=</span>
+                  <span className="text-cyan-500 text-2xl">{item.result}</span>
+                </div>
               </div>
-              <div className="flex items-baseline space-x-2">
-                <span className="text-gray-400 text-xl">=</span>
-                <span className="text-cyan-500 text-2xl">{item.result}</span>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
       <div className="w-full bg-neutral-900 border-t border-neutral-700 p-4">
