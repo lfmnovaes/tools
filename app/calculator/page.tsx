@@ -2,6 +2,8 @@
 
 import { useState, useRef } from "react";
 import { evaluate } from "mathjs";
+import { useLocalStorage } from "react-use";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -18,46 +20,46 @@ type StyledPart = {
 const styleExpression = (expression: string): StyledPart[] => {
   const parts: StyledPart[] = [];
   let currentNumber = "";
-  
   const addPart = (text: string, className: string) => parts.push({ text, className });
-  
   const addNumber = () => {
     if (currentNumber) {
       addPart(currentNumber, "text-white");
       currentNumber = "";
     }
   };
-
   for (const char of expression) {
     if (/[0-9.]/.test(char)) {
       currentNumber += char;
       continue;
     }
-
     addNumber();
-
     const className = (() => {
       switch (true) {
-        case /[\+\-\*\/]/.test(char): return "text-yellow-500";   // Basic operators: + - * /
-        case /[\(\)]/.test(char): return "text-pink-400";         // Parentheses: ( )
-        case /[!%^]/.test(char): return "text-orange-400";        // Special operators: ! % ^
-        case /[<>=]/.test(char): return "text-green-400";         // Comparison operators: < > =
-        case /[|&]/.test(char): return "text-blue-400";           // Logical operators: | &
-        case /[a-zA-Z]/.test(char): return "text-purple-400";     // Functions and variables
-        default: return "text-gray-400";                          // Other characters
+        case /[\+\-\*\/]/.test(char): // Basic operators: + - * /
+          return "text-yellow-500";
+        case /[\(\)]/.test(char): // Parentheses: ( )
+          return "text-pink-400";
+        case /[!%^]/.test(char): // Special operators: ! % ^
+          return "text-orange-400";
+        case /[<>=]/.test(char): // Comparison operators: < > =
+          return "text-green-400";
+        case /[|&]/.test(char): // Logical operators: | &
+          return "text-blue-400";
+        case /[a-zA-Z]/.test(char): // Functions and variables
+          return "text-purple-400";
+        default: // Other characters
+          return "text-gray-400";
       }
     })();
-
     addPart(char, className);
   }
-
   addNumber();
   return parts;
 };
 
 export default function Calculator() {
   const [expression, setExpression] = useState("");
-  const [results, setResults] = useState<ResultItem[]>([]);
+  const [results, setResults] = useLocalStorage<ResultItem[]>("calc-results", []);
   const [inputHistory, setInputHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(0);
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -75,21 +77,27 @@ export default function Calculator() {
   const handleSubmit = () => {
     if (!expression.trim()) return;
     const result = evaluateExpression();
-    setResults((prev) => {
-      const newResults = [...prev, { expression, result }];
-      setTimeout(() => {
-        if (resultsRef.current) {
-          resultsRef.current.scrollTop = resultsRef.current.scrollHeight;
-        }
-      }, 0);
-      return newResults;
-    });
+
+    const currentResults = results ?? [];
+    const maxItems = 100;
+    const newResults = [...currentResults, { expression, result }];
+    if (newResults.length > maxItems) {
+      newResults.shift();
+    }
+    setResults(newResults);
+
     setInputHistory((prev) => {
       const newHistory = [...prev, expression];
       setHistoryIndex(newHistory.length);
       return newHistory;
     });
     setExpression("");
+
+    setTimeout(() => {
+      if (resultsRef.current) {
+        resultsRef.current.scrollTop = resultsRef.current.scrollHeight;
+      }
+    }, 0);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -124,13 +132,10 @@ export default function Calculator() {
 
   return (
     <div className="flex flex-col h-screen bg-neutral-800 text-gray-100">
-      <div
-        ref={resultsRef}
-        className="flex-1 overflow-y-auto px-4"
-      >
+      <div ref={resultsRef} className="flex-1 overflow-y-auto px-4">
         <div className="min-h-full flex flex-col justify-end">
           <div className="flex flex-col">
-            {results.map((item, index) => (
+            {(results ?? []).map((item, index) => (
               <div key={index} className="mb-4 font-mono">
                 <div className="flex items-baseline space-x-2">
                   <span className="text-xl">
