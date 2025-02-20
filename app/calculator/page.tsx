@@ -10,6 +10,51 @@ type HistoryItem = {
   result: string;
 };
 
+type StyledPart = {
+  text: string;
+  className: string;
+};
+
+const styleExpression = (expression: string): StyledPart[] => {
+  const parts: StyledPart[] = [];
+  let currentNumber = '';
+  
+  const addPart = (text: string, className: string) => parts.push({ text, className });
+  
+  const addNumber = () => {
+    if (currentNumber) {
+      addPart(currentNumber, 'text-white');
+      currentNumber = '';
+    }
+  };
+
+  for (const char of expression) {
+    if (/[0-9.]/.test(char)) {
+      currentNumber += char;
+      continue;
+    }
+    
+    addNumber();
+    
+    const className = (() => {
+      switch (true) {
+        case /[\+\-\*\/]/.test(char): return 'text-yellow-500';    // Basic operators: + - * /
+        case /[\(\)]/.test(char): return 'text-pink-400';          // Parentheses: ( )
+        case /[!%^]/.test(char): return 'text-orange-400';         // Special operators: ! % ^
+        case /[<>=]/.test(char): return 'text-green-400';          // Comparison operators: < > =
+        case /[|&]/.test(char): return 'text-blue-400';            // Logical operators: | &
+        case /[a-zA-Z]/.test(char): return 'text-purple-400';      // Functions and variables
+        default: return 'text-gray-400';                           // Other characters
+      }
+    })();
+    
+    addPart(char, className);
+  }
+  
+  addNumber();
+  return parts;
+};
+
 export default function Calculator() {
   const [expression, setExpression] = useState("");
   const [history, setHistory] = useState<HistoryItem[]>([]);
@@ -19,7 +64,8 @@ export default function Calculator() {
     try {
       const result = evaluate(expression);
       return result.toString();
-    } catch {
+    } catch (error) {
+      console.error(error);
       return "Error";
     }
   };
@@ -38,16 +84,30 @@ export default function Calculator() {
   }, [history]);
 
   return (
-    <div className="min-h-screen bg-gray-800 text-gray-100 relative">
-      <div ref={resultsRef} className="overflow-y-auto pb-24 pt-4 px-4">
-        {history.map((item, index) => (
-          <div key={index} className="mb-4">
-            <div className="text-xl text-gray-300">{item.expression}</div>
-            <div className="text-2xl font-bold">{item.result}</div>
-          </div>
-        ))}
+    <div className="flex flex-col h-screen bg-neutral-900 text-gray-100">
+      <div
+        ref={resultsRef}
+        className="flex-1 overflow-y-auto px-4 flex flex-col justify-end"
+      >
+        <div className="flex flex-col">
+          {history.map((item, index) => (
+            <div key={index} className="mb-4 font-mono">
+              <div className="flex items-baseline space-x-2">
+                <span className="text-xl">
+                  {styleExpression(item.expression).map((part, i) => (
+                    <span key={i} className={part.className}>{part.text}</span>
+                  ))}
+                </span>
+              </div>
+              <div className="flex items-baseline space-x-2">
+                <span className="text-gray-400 text-xl">=</span>
+                <span className="text-cyan-500 text-2xl">{item.result}</span>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-      <div className="w-full bg-gray-900 p-4 fixed bottom-0 left-0">
+      <div className="w-full bg-neutral-900 border-t border-neutral-700 p-4">
         <div className="flex items-center space-x-2">
           <Input
             type="text"
@@ -60,7 +120,7 @@ export default function Calculator() {
                 handleSubmit();
               }
             }}
-            className="flex-1 h-12 !text-2xl"
+            className="flex-1 h-12 !text-2xl bg-neutral-900 border-neutral-700 text-gray-100"
           />
           <Button className="h-12" variant="destructive" onClick={() => setExpression("")}>
             Cancel
