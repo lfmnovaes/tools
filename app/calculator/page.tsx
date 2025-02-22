@@ -165,7 +165,7 @@ export default function Calculator() {
           });
         } else {
           // For all other inputs, insert at current cursor position
-          setExpression((prev) => {
+          setExpression(() => {
             const newExpression =
               currentValue.slice(0, cursorPos) + value + currentValue.slice(cursorPos);
 
